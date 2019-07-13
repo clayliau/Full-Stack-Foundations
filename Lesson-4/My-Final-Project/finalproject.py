@@ -16,10 +16,14 @@ def queryAllfromDB(tableObj):
     res_query = session.query(tableObj).all()
     session.remove()
     return res_query
-def addNewItemtoDB(itemObj):
+def addEditItemtoDB(itemObj):
     session.add(itemObj)
     session.commit()
     session.remove()
+def queryOnefromDB(tableObj, target_id):
+    res_query = session.query(tableObj).filter(tableObj.id==target_id).one()
+    session.remove()
+    return res_query
 
 @app.route('/')
 @app.route('/restaurants')
@@ -32,16 +36,27 @@ def newRestaurant():
     if request.method == 'POST':
         name_from_form = request.form['name']
         newRes = Restaurant(name=name_from_form)
-        addNewItemtoDB(newRes)
+        addEditItemtoDB(newRes)
         flash('New restaurant %s item is added in database' %name_from_form)
         return redirect(url_for('showRestaurants'))
     else:
         return render_template('newRestaurant.html')
 
 
-@app.route('/restaurant/<int:restaurant_id>/edit')
+@app.route('/restaurant/<int:restaurant_id>/edit', methods=['POST', 'GET'])
 def editRestaurant(restaurant_id):
-    return "This page will be for editing restaurant %s" % restaurant_id
+    restaurant_query = queryOnefromDB(Restaurant, restaurant_id)
+    if request.method == 'POST':
+        old_name = restaurant_query.name
+        new_name = request.form['name']
+        restaurant_query.name = new_name
+        addEditItemtoDB(restaurant_query)
+        flash('%s\'s name is changed to %s' %(old_name, new_name))
+        return redirect(url_for('showRestaurants'))
+    else:
+        return render_template('editRestaurant.html', restaurant=restaurant_query)
+
+    
 
 @app.route('/restaurant/<int:restaurant_id>/delete')
 def deleteRestaurant(restaurant_id):
