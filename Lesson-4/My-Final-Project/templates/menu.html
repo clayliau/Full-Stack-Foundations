@@ -6,8 +6,9 @@
 	<body>
 		<div class = 'pane'>
 		<h1>{{ restaurant.name }}</h1>
-		
-		{% with messages = get_flashed_messages() %}
+	
+	<div class='flash'>
+	{% with messages = get_flashed_messages() %}
       {% if messages %}
           
         <ul>
@@ -17,7 +18,8 @@
         </ul>
         {% endif %}
     {% endwith %}
-
+	</div>
+	
     {% if items !=[] %}
 
 		<a href = "{{url_for('newMenuItem', restaurant_id = restaurant.id )}}">Create New Item</a>
