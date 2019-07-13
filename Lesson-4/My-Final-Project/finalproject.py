@@ -1,27 +1,50 @@
 from flask import Flask, render_template, url_for, request, redirect, flash, jsonify
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from database_setup import Restaurant, Base, MenuItem
+from sqlalchemy.orm import scoped_session
 
+
+engine = create_engine('sqlite:///Lesson-3/MySitePractice/restaurantmenu.db')
+Base.metadata.bind = engine
+DBSession = sessionmaker(bind=engine)
+session = scoped_session(DBSession)
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Lesson-4/Final-Project/restaurantmenu.db'
-db = SQLAlchemy(app)
 
+def queryAllfromDB(tableObj):
+    res_query = session.query(tableObj).all()
+    session.remove()
+    return res_query
+def addNewItemtoDB(itemObj):
+    session.add(itemObj)
+    session.commit()
+    session.remove()
 
 @app.route('/')
 @app.route('/restaurants')
 def showRestaurants():
+    restaurants = queryAllfromDB(Restaurant)
+    return render_template('restaurants.html', restaurants = restaurants)
 
-    return 'This page will show all my restaurants'
+@app.route('/restaurant/new', methods=['POST', 'GET'])
+def newRestaurant():
+    if request.method == 'POST':
+        name_from_form = request.form['name']
+        newRes = Restaurant(name=name_from_form)
+        addNewItemtoDB(newRes)
+        flash('New restaurant %s item is added in database' %name_from_form)
+        return redirect(url_for('showRestaurants'))
+    else:
+        return render_template('newRestaurant.html')
 
-@app.route('/restaurant/new')
-def newRestaurants():
-    return "This page will be for making new restaurant"
 
 @app.route('/restaurant/<int:restaurant_id>/edit')
-def editRestaurants(restaurant_id):
+def editRestaurant(restaurant_id):
     return "This page will be for editing restaurant %s" % restaurant_id
 
 @app.route('/restaurant/<int:restaurant_id>/delete')
-def deleteRestaurants(restaurant_id):
+def deleteRestaurant(restaurant_id):
     return "This page will be for deleting restaurant %s" % restaurant_id
 
 @app.route('/restaurant/<int:restaurant_id>')
