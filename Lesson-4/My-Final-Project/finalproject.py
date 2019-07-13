@@ -4,6 +4,8 @@ from sqlalchemy.orm import sessionmaker
 from database_setup import Restaurant, Base, MenuItem
 from sqlalchemy.orm import scoped_session
 
+OK = True
+NoOK = False
 
 engine = create_engine('sqlite:///Lesson-3/MySitePractice/restaurantmenu.db')
 Base.metadata.bind = engine
@@ -16,14 +18,30 @@ def queryAllfromDB(tableObj):
     res_query = session.query(tableObj).all()
     session.remove()
     return res_query
+
 def addEditItemtoDB(itemObj):
-    session.add(itemObj)
-    session.commit()
-    session.remove()
+    try:
+        session.add(itemObj)
+        session.commit()
+        session.remove()
+        return OK
+    except:
+        return NoOK
+
 def queryOnefromDB(tableObj, target_id):
     res_query = session.query(tableObj).filter(tableObj.id==target_id).one()
     session.remove()
     return res_query
+    
+def deleteOnefromDB(itemObj):
+    try:
+        session.delete(itemObj)
+        session.commit()
+        session.remove()
+        return OK
+    except:
+        return NoOK
+
 
 @app.route('/')
 @app.route('/restaurants')
@@ -42,7 +60,6 @@ def newRestaurant():
     else:
         return render_template('newRestaurant.html')
 
-
 @app.route('/restaurant/<int:restaurant_id>/edit', methods=['POST', 'GET'])
 def editRestaurant(restaurant_id):
     restaurant_query = queryOnefromDB(Restaurant, restaurant_id)
@@ -58,9 +75,18 @@ def editRestaurant(restaurant_id):
 
     
 
-@app.route('/restaurant/<int:restaurant_id>/delete')
+@app.route('/restaurant/<int:restaurant_id>/delete', methods=['POST', 'GET'])
 def deleteRestaurant(restaurant_id):
-    return "This page will be for deleting restaurant %s" % restaurant_id
+    restaurant_query = queryOnefromDB(Restaurant, restaurant_id)
+    if request.method == 'POST':
+        DeleteOK = deleteOnefromDB(restaurant_query)
+        if DeleteOK:
+            flash('%s is deleted from database' %(restaurant_query.name))
+        else:
+            flash('Error occurs when deleting %s' %(restaurant_query.name))
+        return redirect(url_for('showRestaurants'))
+    else:
+        return render_template('deleteRestaurant.html', restaurant=restaurant_query)
 
 @app.route('/restaurant/<int:restaurant_id>')
 @app.route('/restaurant/<int:restaurant_id>/menu')
